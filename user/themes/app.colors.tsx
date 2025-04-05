@@ -27,6 +27,8 @@ export type Color = {
     alertBg: string;
     iconRed: string;
     darkBorder: string;
+    secondaryFont: string;
+    red: string;
     selectPrimary: string;
   };
   
@@ -35,6 +37,8 @@ export type Color = {
     regularText: '#8F8F8F',
     primaryText: '#1F1F1F',
     linearBorder: 'rgba(149, 143, 159, 0.00)',
+    secondaryFont: "#8F8F8F",
+    red: "#FF4B4B",
     subtitle: '#9BA6B8',
     lightGreen: '#E8F4F1',
     whiteColor: '#fff',
