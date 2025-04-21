@@ -16,6 +16,7 @@ export type images = {
   destinationDark: ImageSourcePropType;
   bgDarkOnboard: ImageSourcePropType;
   authBgDark: ImageSourcePropType;
+  arrow: ImageSourcePropType;
 };
 
 const Images: images = {
@@ -34,5 +35,6 @@ const Images: images = {
   destinationDark: require("../../assets/images/onBoarding/destinationDark.png"),
   bgDarkOnboard: require("../../assets/images/onBoarding/bgDarkOnboard.png"),
   authBgDark: require("../../assets/images/authImage/authBgDark.png"),
+  arrow: require("../../assets/images/arrow.png"),
 };
 export default Images;

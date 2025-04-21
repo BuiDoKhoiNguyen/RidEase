@@ -2,15 +2,36 @@ import { View, Text, Image, ImageBackground, TouchableOpacity } from 'react-nati
 import React from 'react'
 import { commonStyles } from "@/styles/common.style";
 import { external } from "@/styles/external.style";
-import color from "@/themes/app.colors";
-import { fontSizes, windowHeight, windowWidth } from "@/themes/app.constant";
+import color from "@/themes/AppColors";
+import { fontSizes, windowHeight, windowWidth } from "@/themes/AppConstants";
 import fonts from "@/themes/AppFonts";
 import { StyleSheet } from "react-native";
 import Swiper from "react-native-swiper";
-import { slides } from '@/configs/constants';
 import Images from '@/utils/images';
 import { BackArrow } from '@/utils/icons';
 import { router } from 'expo-router';
+
+export const slides = [
+  {
+    id: 0,
+    image: Images.onboarding1,
+    text: "Request a Ride",
+    description: "Request a ride get picked up by a nearby community driver",
+  },
+  {
+    id: 1,
+    image: Images.onboarding2,
+    text: "Confirm Your Driver",
+    description: "Huge drivers network helps you find comforable, safe and cheap ride",
+  },
+  {
+    id: 2,
+    image: Images.onboarding3,
+    text: "Track your ride",
+    description:
+      "Know your driver in advance and be able to view current location in real time on the map",
+  },
+];
 
 export default function OnboardingScreen() {
   return (
@@ -29,7 +50,7 @@ export default function OnboardingScreen() {
                 style={styles.img}
                 source={Images.bgOnboarding}
               >
-                <Text style={styles.title}>{silde.text}</Text>
+                <Text style={[styles.title, {fontSize: fontSizes.FONT30}]}>{silde.text}</Text>
                 <Text style={styles.description}>{silde.description}</Text>
                 <TouchableOpacity
                   style={styles.backArrow}
@@ -51,10 +72,12 @@ const styles = StyleSheet.create({
     ...commonStyles.flexContainer,
   },
   imageBackground: {
-    width: "100%",
-    height: windowHeight(300),
+    width: "80%",
+    height: windowHeight(240),
     marginBottom: windowHeight(40),
+    marginTop: windowHeight(100),
     resizeMode: "stretch",
+    alignSelf: "center", 
   },
   title: {
     ...commonStyles.mediumText23,
@@ -66,7 +89,7 @@ const styles = StyleSheet.create({
     paddingTop: windowHeight(12),
     width: "75%",
     ...external.as_center,
-    fontSize: fontSizes.FONT19,
+    fontSize: fontSizes.FONT20,
     lineHeight: windowHeight(17),
     ...external.ti_center,
   },
@@ -74,7 +97,8 @@ const styles = StyleSheet.create({
     width: windowHeight(34),
     height: windowHeight(34),
     borderRadius: windowHeight(34),
-    backgroundColor: color.buttonBg,
+    fontFamily: fonts.ProBold,
+    backgroundColor: color.primary,
     alignItems: "center",
     justifyContent: "center",
     alignSelf: "center",
@@ -88,7 +112,7 @@ const styles = StyleSheet.create({
   },
   activeStyle: {
     width: "7%",
-    backgroundColor: color.buttonBg,
+    backgroundColor: color.primary,
   },
   paginationStyle: {
     height: "25%",

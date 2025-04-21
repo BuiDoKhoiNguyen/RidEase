@@ -1,7 +1,7 @@
 import { useTheme } from "@react-navigation/native";
 import { View, Text, StyleSheet } from "react-native";
-import color from "@/themes/app.colors";
-import { fontSizes, windowHeight } from "@/themes/app.constant";
+import color from "@/themes/AppColors";
+import { fontSizes, windowHeight } from "@/themes/AppConstants";
 import fonts from "@/themes/AppFonts";
 
 interface TitleViewProps {

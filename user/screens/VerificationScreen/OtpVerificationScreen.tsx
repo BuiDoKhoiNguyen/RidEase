@@ -1,11 +1,11 @@
 import { View, Text, TextInput, TouchableOpacity, Button, StyleSheet } from 'react-native'
 import React, { useState } from 'react'
-import AuthContainer from '@/utils/container/authContainer'
-import { fontSizes, SCREEN_HEIGHT, windowHeight, windowWidth } from '@/themes/app.constant'
+import AuthContainer from '@/utils/container/AuthContainer'
+import { fontSizes, SCREEN_HEIGHT, windowHeight, windowWidth } from '@/themes/AppConstants'
 import { useToast } from 'react-native-toast-notifications'
 import { router, useLocalSearchParams } from 'expo-router'
 import OTPTextInput from "react-native-otp-textinput";
-import color from "@/themes/app.colors";
+import color from "@/themes/AppColors";
 import { commonStyles } from '@/styles/common.style'
 import fonts from '@/themes/AppFonts'
 import AsyncStorage from "@react-native-async-storage/async-storage"
@@ -55,7 +55,7 @@ export default function OtpVerificationScreen() {
 
   return (
     <AuthContainer
-      topSpace={windowHeight(240)}
+      topSpace={windowHeight(200)}
       imageShow={true}
       container={
         <View style={{ height: SCREEN_HEIGHT - windowHeight(240 + 175), paddingHorizontal: windowWidth(16) }}>
@@ -75,11 +75,12 @@ export default function OtpVerificationScreen() {
 
           <View style={{ marginTop: 30 }}>
             <TouchableOpacity
-              style={styles.verifyButton}
+              style={[commonStyles.button,{marginTop: 30,
+                marginBottom: 10}]}
               onPress={() => handleSubmit()}
               disabled={loader}
             >
-              <Text style={styles.verifyText}>Verify</Text>
+              <Text style={commonStyles.buttonText}>Verify</Text>
             </TouchableOpacity>
           </View>
           <View style={{ marginBottom: 15 }}>
@@ -137,17 +138,4 @@ const styles = StyleSheet.create({
     fontFamily: fonts.bold,
     paddingHorizontal: 5,
   },
-  verifyButton: {
-    backgroundColor: color.buttonBg,
-    padding: 15,
-    borderRadius: 10,
-    marginTop: 30,
-    marginBottom: 10
-  },
-  verifyText: {
-    color: 'white',
-    textAlign: 'center',
-    fontSize: 18,
-    fontWeight: '600',
-  }
 });

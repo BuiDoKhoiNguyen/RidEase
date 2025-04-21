@@ -1,10 +1,10 @@
 import { View, Text, Image, TouchableOpacity } from 'react-native'
 import React, { useState } from 'react'
-import AuthContainer from '@/utils/container/authContainer'
+import AuthContainer from '@/utils/container/AuthContainer'
 import { commonStyles } from "@/styles/common.style";
 import { external } from "@/styles/external.style";
-import color from "@/themes/app.colors";
-import { fontSizes, SCREEN_HEIGHT, windowHeight, windowWidth } from "@/themes/app.constant";
+import color from "@/themes/AppColors";
+import { fontSizes, SCREEN_HEIGHT, windowHeight, windowWidth } from "@/themes/AppConstants";
 import fonts from "@/themes/AppFonts";
 import { StyleSheet } from "react-native";
 import { useToast } from 'react-native-toast-notifications';
@@ -18,6 +18,7 @@ export default function LoginScreen() {
   const [phoneNumber, setPhoneNumber] = useState("")
   const [loading, setLoading] = useState(false)
   const [countryCode, setCountryCode] = useState('+84')
+  const [generatedOtp, setGeneratedOtp] = useState("")
   const toast = useToast()
 
   const handleSubmit = async () => {
@@ -35,6 +36,14 @@ export default function LoginScreen() {
         })
         .then((res) => {
           setLoading(false);
+          // Nếu server trả về OTP (trong môi trường development), hiển thị nó
+          if (res.data.otp) {
+            setGeneratedOtp(res.data.otp);
+            toast.show(`Development OTP: ${res.data.otp}`, {
+              placement: "bottom",
+              duration: 5000,
+            });
+          }
           router.push({
             pathname: "/(routes)/OtpVerification",
             params: { phoneNumber: fullPhoneNumber },
@@ -56,11 +65,10 @@ export default function LoginScreen() {
 
   return (
     <AuthContainer
-      topSpace={windowHeight(240)}
+      topSpace={windowHeight(200)}
       imageShow={true}
       container={
-        <View style={{ height: SCREEN_HEIGHT-windowHeight(240+175), paddingHorizontal: windowWidth(16) }}>
-          <Image style={styles.transformLine} source={Images.line} />
+        <View>
           <SignInText />
 
           <View style={{ marginTop: 25, paddingBottom: 10 }}>
@@ -83,8 +91,8 @@ export default function LoginScreen() {
               />
             </View>
 
-            <TouchableOpacity style={styles.getOtpButton} onPress={() => handleSubmit()} disabled={loading} >
-              <Text style={styles.getOtpText}>Get OTP</Text>
+            <TouchableOpacity style={[commonStyles.button, {marginTop: 30, marginBottom: 10}]} onPress={() => handleSubmit()} disabled={loading} >
+              <Text style={commonStyles.buttonText}>Get OTP</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -96,14 +104,6 @@ export default function LoginScreen() {
 
 
 const styles = StyleSheet.create({
-  transformLine: {
-    transform: [{ rotate: "-90deg" }],
-    height: windowHeight(50),
-    width: windowWidth(120),
-    position: "absolute",
-    left: windowWidth(-50),
-    top: windowHeight(-20),
-  },
   countryCodeContainer: {
     width: windowWidth(69),
   },
@@ -130,10 +130,10 @@ const styles = StyleSheet.create({
     fontSize: fontSizes.FONT16,
   },
   newUserContainer: {
-    ...external.fd_row,
-    ...external.ai_center,
-    ...external.mt_12,
-    ...external.as_center,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: windowHeight(20),
+    alignSelf: 'center',
   },
   newUserText: {
     ...commonStyles.regularText,
@@ -144,23 +144,10 @@ const styles = StyleSheet.create({
     paddingHorizontal: windowHeight(4),
   },
   rememberTextView: {
-    ...external.fd_row,
-    ...external.ai_center,
-    ...external.mt_5,
-    ...external.js_space,
-  },
-  getOtpButton: {
-    backgroundColor: color.buttonBg,
-    padding: 15,
-    borderRadius: 10,
-    marginTop: 30,
-    marginBottom: 10
-  },
-  getOtpText: {
-    color: 'white',
-    textAlign: 'center',
-    fontSize: 18,
-    fontWeight: '600',
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: windowHeight(5),
+    justifyContent: 'space-between',
   }
 });
 

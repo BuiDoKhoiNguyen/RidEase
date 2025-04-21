@@ -1,17 +1,20 @@
 {
   "expo": {
-    "name": "RideWave",
-    "slug": "RideWave",
+    "name": "RidEase-User",
+    "slug": "RidEase-User",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "scheme": "RideWave",
+    "scheme": "RidEase-User",
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
     "ios": {
       "supportsTablet": true
     },
@@ -20,7 +23,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.becodemy.RideWave",
+      "package": "com.rs.RidEase-User",
       "config": {
         "googleMaps": {
           "apiKey": ""
@@ -39,6 +42,11 @@
         }
       ]
     ],
+    "extra": {
+      "eas": {
+        "projectId": "e6c33690-be65-4b38-8af0-ee699833cff8"
+      }
+    },
     "experiments": {
       "typedRoutes": true
     }

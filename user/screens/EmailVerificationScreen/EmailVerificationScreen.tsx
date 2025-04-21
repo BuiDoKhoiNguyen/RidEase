@@ -1,15 +1,14 @@
 import { View, Text, TouchableOpacity, StyleSheet } from "react-native";
 import React, { useState } from "react";
 import { router, useLocalSearchParams } from "expo-router";
-import { fontSizes, SCREEN_HEIGHT, windowHeight, windowWidth } from "@/themes/app.constant";
+import { fontSizes, SCREEN_HEIGHT, windowHeight, windowWidth } from "@/themes/AppConstants";
 import { commonStyles } from "@/styles/common.style";
-import { external } from "@/styles/external.style";
-import color from "@/themes/app.colors";
+import color from "@/themes/AppColors";
 import { Toast } from "react-native-toast-notifications";
 import OTPTextInput from "react-native-otp-textinput";
 import axios from "axios";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import AuthContainer from "@/utils/container/authContainer";
+import AuthContainer from "@/utils/container/AuthContainer";
 import fonts from "@/themes/AppFonts";
 
 export default function EmailVerificationScreen() {
@@ -54,7 +53,7 @@ export default function EmailVerificationScreen() {
                             color: color.primaryText
                         }}>Email Verification</Text>
                         <Text style={{
-                            color: color.secondaryFont || '#666',
+                            color: color.secondary || '#666',
                             marginTop: windowHeight(0.6),
                             fontSize: fontSizes.FONT20,
                             fontFamily: fonts.medium,
@@ -71,11 +70,11 @@ export default function EmailVerificationScreen() {
 
                     <View style={{ marginTop: 30 }}>
                         <TouchableOpacity
-                            style={styles.verifyButton}
+                            style={commonStyles.button}
                             onPress={() => handleSubmit()}
                             disabled={loader}
                         >
-                            <Text style={styles.verifyText}>Verify</Text>
+                            <Text style={commonStyles.buttonText}>Verify</Text>
                         </TouchableOpacity>
                     </View>
                     <View style={{ marginBottom: 15 }}>

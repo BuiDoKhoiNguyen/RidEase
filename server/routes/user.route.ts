@@ -4,6 +4,7 @@ import {
   getLoggedInUserData,
   registerUser,
   sendingOtpToEmail,
+  updateUserProfile,
   verifyingEmail,
   verifyOtp,
 } from "../controllers/user.controller";
@@ -22,5 +23,7 @@ userRouter.put("/email-otp-verify", verifyingEmail);
 userRouter.get("/me", isAuthenticated, getLoggedInUserData);
 
 userRouter.get("/get-rides", isAuthenticated, getAllRides);
+
+userRouter.put("/update-profile", isAuthenticated, updateUserProfile);
 
 export default userRouter;

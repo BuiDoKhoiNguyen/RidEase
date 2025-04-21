@@ -1,8 +1,8 @@
 import { View, Text, TextInput, Pressable } from "react-native";
 import { styles } from "./styles";
-import color from "@/themes/app.colors";
+import color from "@/themes/AppColors";
 import { Clock, Search } from "@/utils/icons";
-import { windowHeight, windowWidth } from "@/themes/app.constant";
+import { windowHeight, windowWidth } from "@/themes/AppConstants";
 import DownArrow from "@/assets/icons/downArrow";
 import { router } from "expo-router";
 

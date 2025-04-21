@@ -1,11 +1,12 @@
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ActivityIndicator, TextInput } from "react-native";
 import React, { useState } from "react";
 import { useTheme } from "@react-navigation/native";
-import { fontSizes, windowHeight, windowWidth } from "@/themes/app.constant";
-import color from "@/themes/app.colors";
+import { fontSizes, windowHeight, windowWidth } from "@/themes/AppConstants";
+import color from "@/themes/AppColors";
 import { router, useLocalSearchParams } from "expo-router";
 import axios from "axios";
 import fonts from "@/themes/AppFonts";
+import { commonStyles } from "@/styles/common.style";
 
 export default function RegistrationScreen() {
     const { colors } = useTheme();
@@ -82,7 +83,7 @@ export default function RegistrationScreen() {
                                     color: color.primaryText
                                 }}>Create your account</Text>
                                 <Text style={{
-                                    color: color.secondaryFont || '#666',
+                                    color: color.secondary || '#666',
                                     marginTop: windowHeight(0.6),
                                     fontSize: fontSizes.FONT20,
                                     fontFamily: fonts.medium,
@@ -110,7 +111,7 @@ export default function RegistrationScreen() {
                                 <TextInput
                                     style={[styles.textInput, styles.disabledInput]}
                                     placeholder="Enter your phone number"
-                                    value={parsedUser?.phone_number}
+                                    value={parsedUser?.phoneNumber}
                                     editable={false}
                                 />
                             </View>
@@ -136,14 +137,14 @@ export default function RegistrationScreen() {
 
                             <View style={styles.margin}>
                                 <TouchableOpacity
-                                    style={[styles.button, loading && styles.buttonDisabled]}
+                                    style={[commonStyles.button, loading && styles.buttonDisabled]}
                                     onPress={handleSubmit}
                                     disabled={loading}
                                 >
                                     {loading ? (
                                         <ActivityIndicator color={color.whiteColor} />
                                     ) : (
-                                        <Text style={styles.buttonText}>Next</Text>
+                                        <Text style={commonStyles.buttonText}>Next</Text>
                                     )}
                                 </TouchableOpacity>
                             </View>

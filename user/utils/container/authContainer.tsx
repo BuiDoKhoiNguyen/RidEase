@@ -10,9 +10,10 @@ import {
 import React, { ReactNode } from "react";
 import { external } from "@/styles/external.style";
 import Images from "../images";
-import { windowHeight, windowWidth } from "@/themes/app.constant";
+import { windowHeight, windowWidth } from "@/themes/AppConstants";
 import { commonStyles } from "@/styles/common.style";
-import color from "@/themes/app.colors";
+import color from "@/themes/AppColors";
+
 
 
 type Props = {
@@ -23,8 +24,9 @@ type Props = {
 
 const AuthContainer = ({ container, topSpace, imageShow }: Props) => {
   return (
+    
     <KeyboardAvoidingView
-      style={[external.fx_1]}
+      style={[external.fx_1, {backgroundColor: color.whiteColor}]}
       behavior={Platform.OS === "ios" ? "padding" : "height"}
     >
       {imageShow && (
@@ -36,24 +38,29 @@ const AuthContainer = ({ container, topSpace, imageShow }: Props) => {
             paddingTop: windowHeight(50),
           }}
         >
-          Ridee
+          RidEase
         </Text>
       )}
-      <Image
-        style={[styles.backgroundImage, { marginTop: topSpace }]}
-        source={Images.authBg}
-      />
+  
+        <Image
+          style={[styles.backgroundImage, { marginTop: topSpace }]}
+          source={Images.authBg}
+        />
 
-      <View style={styles.contentContainer}>
-        <View style={[styles.container]}>
-          <ScrollView>{container}</ScrollView>
+        <View style={styles.contentContainer}>
+          <View style={[styles.container]}>
+            <ScrollView>{container}</ScrollView>
+          </View>
         </View>
-      </View>
     </KeyboardAvoidingView>
   );
 };
 
 const styles = StyleSheet.create({
+  mainContainer: {
+    flex: 1,
+    flexDirection: "column",
+  },
   container: {
     ...commonStyles.shadowContainer,
     backgroundColor: color.whiteColor,
@@ -78,8 +85,8 @@ const styles = StyleSheet.create({
   img: {
     height: windowHeight(28),
     width: windowHeight(90),
-    ...external.as_center,
-    ...external.mt_50,
+    alignSelf: "center",
+    marginTop: windowHeight(45),
     resizeMode: "contain",
   },
 });

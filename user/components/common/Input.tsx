@@ -5,9 +5,10 @@ import {
   StyleSheet,
   TextInput,
 } from "react-native";
+import React from "react";
 import { useTheme } from "@react-navigation/native";
-import { windowHeight, windowWidth } from "@/themes/app.constant";
-import color from "@/themes/app.colors";
+import { windowHeight, windowWidth } from "@/themes/AppConstants";
+import color from "@/themes/AppColors";
 import fonts from "@/themes/AppFonts";
 
 interface InputProps {
@@ -47,7 +48,7 @@ export default function Input({
           },
         ]}
         placeholder={placeholder}
-        placeholderTextColor={color.secondaryFont}
+        placeholderTextColor={color.regularText}
         keyboardType={keyboardType}
         value={value}
         aria-disabled={disabled}
@@ -69,7 +70,7 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     marginBottom: 5,
     height: windowHeight(30),
-    color: color.secondaryFont,
+    color: color.regularText,
     paddingHorizontal: 10,
   },
   warning: {

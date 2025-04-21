@@ -1,11 +1,11 @@
 {
   "expo": {
-    "name": "Ridewave-Driver",
-    "slug": "Ridewave-Driver",
+    "name": "RidEase-Driver",
+    "slug": "RidEase-Driver",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
-    "scheme": "Ridewave-Driver",
+    "scheme": "RidEase-Driver",
     "userInterfaceStyle": "light",
     "splash": {
       "image": "./assets/splash.png",
@@ -20,7 +20,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.becodemy.Ridewave-Driver",
+      "package": "com.rs.RidEase-Driver",
       "config": {
         "googleMaps": {
           "apiKey": ""
@@ -39,6 +39,11 @@
         }
       ]
     ],
+    "extra": {
+      "eas": {
+        "projectId": "e6c33690-be65-4b38-8af0-ee699833cff8"
+      }
+    },
     "experiments": {
       "typedRoutes": true
     }

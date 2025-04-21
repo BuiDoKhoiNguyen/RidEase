@@ -1,4 +1,3 @@
-
 import OtpVerificationScreen from '@/screens/VerificationScreen/OtpVerificationScreen'
 import React from 'react'
 

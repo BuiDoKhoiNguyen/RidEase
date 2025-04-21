@@ -20,7 +20,7 @@ export default function SignInText({
           { marginTop: 20 },
         ]}
       >
-        {title ? title : "Join to take your ride 😃"}
+        {title ? title : "Hi, nice to meet you!"}
       </Text>
       <Text
         style={[commonStyles.regularText, external.pt_4, { textAlign: "left" }]}

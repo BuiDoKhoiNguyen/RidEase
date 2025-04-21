@@ -1,6 +1,9 @@
 import { ImageSourcePropType } from "react-native";
 
 export type images = {
+  onboarding1: ImageSourcePropType;
+  onboarding2: ImageSourcePropType;
+  onboarding3: ImageSourcePropType;
   authBg: ImageSourcePropType;
   line: ImageSourcePropType;
   homeBanner: ImageSourcePropType;
@@ -17,9 +20,13 @@ export type images = {
   bgDarkOnboard: ImageSourcePropType;
   authBgDark: ImageSourcePropType;
   bgOnboarding: ImageSourcePropType;
+  arrow: ImageSourcePropType;
 };
 
 const Images: images = {
+  onboarding1: require("../../assets/images/onBoarding/Page 1.png"),
+  onboarding2: require("../../assets/images/onBoarding/Page 2.png"),
+  onboarding3: require("../../assets/images/onBoarding/Page 3.png"),
   authBg: require("../../assets/images/authImage/authBg.png"),
   line: require("../../assets/images/gif/line.gif"),
   homeBanner: require("../../assets/images/homeScreenImage/homeBanner.png"),
@@ -35,6 +42,7 @@ const Images: images = {
   destinationDark: require("../../assets/images/onBoarding/destinationDark.png"),
   bgDarkOnboard: require("../../assets/images/onBoarding/bgDarkOnboard.png"),
   authBgDark: require("../../assets/images/authImage/authBgDark.png"),
-  bgOnboarding: require('../../assets/images/onBoarding/bgOnboarding.png')
+  bgOnboarding: require('../../assets/images/onBoarding/bgOnboarding.png'),
+  arrow: require("../../assets/images/arrow.png"),
 };
 export default Images;

@@ -1,7 +1,7 @@
 import { StyleSheet } from 'react-native';
-import appFonts from '../themes/app.fonts';
-import color from '../themes/app.colors';
-import { fontSizes, windowHeight } from '../themes/app.constant';
+import appFonts from '../themes/AppFonts';
+import color from '../themes/AppColors';
+import { fontSizes, windowHeight } from '../themes/AppConstants';
 import { external } from './external.style';
 
 const commonStyles = StyleSheet.create({
@@ -55,6 +55,18 @@ const commonStyles = StyleSheet.create({
     shadowOpacity: 0.18,
     shadowRadius: 1.0,
     elevation: 1,
+  },
+  button: {
+    height: windowHeight(40),
+    backgroundColor: color.primary,
+    justifyContent: "center",
+    alignItems: "center",
+    borderRadius: 10,
+  },
+  buttonText: {
+    color: color.whiteColor,
+    fontWeight: "bold",
+    fontSize: fontSizes.FONT18,
   },
 });
 export { commonStyles };
