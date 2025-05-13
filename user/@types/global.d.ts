@@ -25,6 +25,7 @@ type DriverType = {
   phoneNumber: string;
   email: string;
   vehicleType: string;
+  rating: string;
   registrationNumber: string;
   registrationDate: string;
   drivingLicense: string;

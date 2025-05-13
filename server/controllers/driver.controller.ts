@@ -436,7 +436,7 @@ export const getAllRides = async (req: any, res: Response) => {
             user: true,
         },
     });
-    res.status(201).json({
+    res.status(200).json({
         rides,
     });
 };

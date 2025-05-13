@@ -1,35 +1,59 @@
-import { View, Text, StyleSheet, FlatList } from 'react-native'
-import React from 'react'
+import { View, Text, StyleSheet, FlatList, ActivityIndicator, RefreshControl } from 'react-native'
+import React, { useEffect, useState } from 'react'
 import { useGetUserData } from '@/hooks/useGetUserData'
 import { SafeAreaView } from 'react-native-safe-area-context'
 import color from '@/themes/AppColors'
+import { RideCard } from '@/components/ride/RideCard'
+import axios from 'axios'
+import AsyncStorage from '@react-native-async-storage/async-storage'
 
 export default function HistoryScreen() {
-  // const { userData, loading } = useGetUserData()
-  
-  // Dữ liệu mẫu cho lịch sử chuyến đi
-  const rideHistory = [
-    { id: '1', date: '15/04/2025', from: 'Quận 1, TP.HCM', to: 'Quận 7, TP.HCM', price: '75.000 VND' },
-    { id: '2', date: '10/04/2025', from: 'Quận 3, TP.HCM', to: 'Quận 5, TP.HCM', price: '45.000 VND' },
-    { id: '3', date: '05/04/2025', from: 'Quận 2, TP.HCM', to: 'Quận 10, TP.HCM', price: '85.000 VND' },
-  ]
+  const { loading: userLoading } = useGetUserData()
+  interface Ride {
+    id: string
+    // Add other properties of a ride here if needed
+  }
 
-  const renderRideItem = ({ item }) => (
-    <View style={styles.rideItem}>
-      <View style={styles.rideHeader}>
-        <Text style={styles.rideDate}>{item.date}</Text>
-        <Text style={styles.ridePrice}>{item.price}</Text>
+  const [rides, setRides] = useState<Ride[]>([])
+  const [loading, setLoading] = useState(false)
+  const [refreshing, setRefreshing] = useState(false)
+  
+  useEffect(() => {
+    fetchRideHistory()
+  }, [])
+  
+  const fetchRideHistory = async () => {
+    try {
+      setLoading(true)
+      const accessToken = await AsyncStorage.getItem("accessToken");
+     
+      const response = await axios.get(`${process.env.EXPO_PUBLIC_SERVER_URI}/get-rides`, {
+        headers: {
+          Authorization: `Bearer ${accessToken}`
+        }
+      })
+
+      setRides(response.data.rides)
+    } catch (error) {
+      console.error('Error fetching ride history:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const onRefresh = async () => {
+    setRefreshing(true)
+    await fetchRideHistory()
+    setRefreshing(false)
+  }
+
+  if (userLoading || loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color={color.primary} />
       </View>
-      <View style={styles.rideRoute}>
-        <View style={styles.routeDot} />
-        <Text style={styles.routeText}>{item.from}</Text>
-      </View>
-      <View style={styles.rideRoute}>
-        <View style={[styles.routeDot, { backgroundColor: color.primary }]} />
-        <Text style={styles.routeText}>{item.to}</Text>
-      </View>
-    </View>
-  )
+    )
+  }
 
   return (
     <SafeAreaView style={styles.container}>
@@ -37,12 +61,19 @@ export default function HistoryScreen() {
         <Text style={styles.heading}>Rides history</Text>
       </View>
       
-      {rideHistory.length > 0 ? (
+      {rides && rides.length > 0 ? (
         <FlatList
-          data={rideHistory}
-          renderItem={renderRideItem}
-          keyExtractor={item => item.id}
+          data={[...rides].reverse()}
+          renderItem={({ item }) => <RideCard item={item} />}
+          keyExtractor={(item) => item.id}
           contentContainerStyle={styles.listContainer}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={[color.primary]}
+            />
+          }
         />
       ) : (
         <View style={styles.emptyContainer}>
@@ -125,5 +156,10 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#8F8F8F',
     textAlign: 'center',
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   }
 })

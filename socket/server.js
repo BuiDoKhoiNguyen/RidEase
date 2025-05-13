@@ -25,72 +25,179 @@ wss.on("connection", (ws) => {
   ws.on("message", (message) => {
     try {
       const data = JSON.parse(message);
-      console.log("Received message:", data); 
 
-      // Xử lý khi tài xế kết nối
       if (data.type === "driverConnect") {
         driverId = data.driverId;
         driverConnections[driverId] = ws;
         console.log(`Driver ${driverId} connected via WebSocket`);
       }
       
-      // Xử lý khi người dùng kết nối
       if (data.type === "userConnect") {
         userId = data.userId;
         userConnections[userId] = ws;
         console.log(`User ${userId} connected via WebSocket`);
+        
+        // Kiểm tra xem người dùng có đang theo dõi tài xế nào không
+        Object.keys(driverLocationSubscribers).forEach(driverId => {
+          const subscribers = driverLocationSubscribers[driverId];
+          const isSubscribing = subscribers.some(sub => 
+            (typeof sub === 'object' ? sub.userId === userId : sub === userId)
+          );
+          
+          if (isSubscribing) {
+            console.log(`[INFO] User ${userId} reconnected and was subscribed to driver ${driverId}`);
+            
+            // Gửi ngay vị trí hiện tại của tài xế nếu có
+            if (drivers[driverId]) {
+              ws.send(JSON.stringify({
+                type: "driverLocationUpdate",
+                driverId: driverId,
+                data: drivers[driverId]
+              }));
+            }
+          }
+        });
       }
 
+      // Xử lý khi người dùng hủy đăng ký theo dõi vị trí tài xế
+      if (data.type === "unsubscribeFromDriverLocation") {
+        const targetDriverId = data.driverId;
+        const subscriberId = data.userId;
+        
+        if (!targetDriverId || !subscriberId) {
+          console.error("[ERROR] Missing driverId or userId in unsubscribe request:", data);
+          return;
+        }
+        
+        if (driverLocationSubscribers[targetDriverId]) {
+          // Xóa người dùng khỏi danh sách người theo dõi tài xế
+          driverLocationSubscribers[targetDriverId] = driverLocationSubscribers[targetDriverId].filter(sub => {
+            return typeof sub === 'object' ? sub.userId !== subscriberId : sub !== subscriberId;
+          });
+          
+          console.log(`[INFO] User ${subscriberId} unsubscribed from driver ${targetDriverId} location updates`);
+        }
+      }
+        
       // Xử lý khi người dùng đăng ký theo dõi vị trí của tài xế
       if (data.type === "subscribeToDriverLocation") {
         const targetDriverId = data.driverId;
+        
+        // Thêm kiểm tra userId
+        if (!data.userId) {
+          console.error("[ERROR] Missing userId in subscribeToDriverLocation:", data);
+          ws.send(JSON.stringify({
+            type: "error",
+            message: "Missing userId in subscribe request"
+          }));
+          return;
+        }
+        
+        // Sử dụng userId từ request thay vì từ phạm vi cha
+        const subscriberId = data.userId;
+        
+        // Lưu trữ kết nối người dùng nếu chưa có (đảm bảo userConnections có entry)
+        if (!userConnections[subscriberId]) {
+          userConnections[subscriberId] = ws;
+          userId = subscriberId; // Cập nhật userId trong phạm vi hàm xử lý kết nối
+          console.log(`User ${subscriberId} auto-connected via subscription`);
+        }
+        
+        // Kiểm tra xem tài xế tồn tại không
+        if (!drivers[targetDriverId]) {
+          console.log(`[WARNING] No location data for driver ${targetDriverId} yet`);
+        }
         
         if (!driverLocationSubscribers[targetDriverId]) {
           driverLocationSubscribers[targetDriverId] = [];
         }
         
+        // Lưu thêm requestId vào thông tin đăng ký
+        const subscriptionInfo = {
+          userId: subscriberId,
+          requestId: data.requestId,
+          timestamp: Date.now()
+        };
+        
         // Thêm người dùng vào danh sách người theo dõi tài xế này
-        if (!driverLocationSubscribers[targetDriverId].includes(userId)) {
-          driverLocationSubscribers[targetDriverId].push(userId);
+        const existingSubscriberIndex = driverLocationSubscribers[targetDriverId].findIndex(
+          item => typeof item === 'object' ? item.userId === subscriberId : item === subscriberId
+        );
+        
+        if (existingSubscriberIndex !== -1) {
+          // Cập nhật thông tin đăng ký nếu đã tồn tại
+          driverLocationSubscribers[targetDriverId][existingSubscriberIndex] = subscriptionInfo;
+        } else {
+          // Thêm mới nếu chưa tồn tại
+          driverLocationSubscribers[targetDriverId].push(subscriptionInfo);
         }
         
-        console.log(`User ${userId} subscribed to driver ${targetDriverId} location updates`);
+        console.log(`User ${subscriberId} subscribed to driver ${targetDriverId} location updates with requestId ${data.requestId}`);
         
         // Gửi ngay vị trí hiện tại của tài xế nếu có
         if (drivers[targetDriverId]) {
           ws.send(JSON.stringify({
             type: "driverLocationUpdate",
             driverId: targetDriverId,
-            data: drivers[targetDriverId]
+            data: drivers[targetDriverId],
+            requestId: data.requestId // Thêm requestId vào phản hồi
+          }));
+          console.log(`Sent initial location to user ${subscriberId} for driver ${targetDriverId}`);
+        } else {
+          ws.send(JSON.stringify({
+            type: "info",
+            message: "Đã đăng ký theo dõi vị trí tài xế nhưng chưa có dữ liệu vị trí",
+            requestId: data.requestId
           }));
         }
       }
 
       // Xử lý khi tài xế cập nhật vị trí
       if (data.type === "locationUpdate" && data.role === "driver") {
-        driverId = data.driver;
+        // Chỉ sử dụng trường driverId
+        const driverId = data.driverId;
+        
+        if (!driverId) {
+          console.error("[ERROR] Missing driverId in locationUpdate:", data);
+          return;
+        }
+        
+        const rideId = data.rideId || null;
+        
         drivers[driverId] = {
           latitude: data.data.latitude,
           longitude: data.data.longitude,
-          heading: data.data.heading || 0, // Thêm hướng di chuyển (0-360 độ)
-          status: data.data.status || "available" // available, busy, offline
+          heading: data.data.heading || 0,
+          status: data.data.status || "available"
         };
         driverConnections[driverId] = ws;
-        console.log("Updated driver location:", drivers[driverId]);
+        console.log(`[DEBUG] Updated driver location for ${driverId}:`, drivers[driverId]);
         
         // Gửi cập nhật vị trí cho các người dùng đang theo dõi tài xế này
         if (driverLocationSubscribers[driverId] && driverLocationSubscribers[driverId].length > 0) {
-          driverLocationSubscribers[driverId].forEach(subscriberId => {
+          console.log(`[DEBUG] Sending location update to ${driverLocationSubscribers[driverId].length} subscribers for driver ${driverId}`);
+          
+          driverLocationSubscribers[driverId].forEach(subscriber => {
+            // Kiểm tra xem subscriber là chuỗi hay đối tượng
+            const subscriberId = typeof subscriber === 'object' ? subscriber.userId : subscriber;
+            const requestId = typeof subscriber === 'object' ? subscriber.requestId : null;
+            
             const subscriberWs = userConnections[subscriberId];
             if (subscriberWs && subscriberWs.readyState === 1) { // 1 = OPEN
               subscriberWs.send(JSON.stringify({
                 type: "driverLocationUpdate",
                 driverId: driverId,
-                data: drivers[driverId]
+                rideId: rideId,
+                data: drivers[driverId],
+                requestId: requestId
               }));
-              console.log(`Sent location update to user ${subscriberId}`);
+              console.log(`[DEBUG] Sent location update to user ${subscriberId} for request ${requestId || 'unknown'}`);
+            } else {
+              console.log(`[WARNING] Cannot send update to user ${subscriberId} - connection not available`);
             }
           });
+        } else {
+          console.log(`[INFO] No subscribers for driver ${driverId}`);
         }
       }
 
@@ -121,6 +228,7 @@ wss.on("connection", (ws) => {
             longitude: 0,
             locationName: "Unknown Destination"
           },
+          distance: data.distance || 0,
           timestamp: Date.now(),
           status: "pending",
           userConnection: ws
@@ -231,6 +339,7 @@ wss.on("connection", (ws) => {
                 requestId: requestId,
                 userId: userId,
                 userName: rideRequests[requestId].userName,
+                userPhone: data.phoneNumber,
                 pickupLocation: rideRequests[requestId].userLocation,
                 destination: rideRequests[requestId].destination,
                 distance: data.distance || 0,
@@ -280,6 +389,7 @@ wss.on("connection", (ws) => {
               requestId: requestId,
               driverId: driverId,
               driverName: data.driverName || "Driver",
+              driverPhoneNumber: data.phoneNumber || "Unknown",
               driverLocation: drivers[driverId],
               estimatedArrival: data.estimatedArrival || "10 phút"
             }));
@@ -292,11 +402,40 @@ wss.on("connection", (ws) => {
       if (data.type === "startRide" && data.role === "driver") {
         const requestId = data.requestId;
         const rideId = data.rideId;
+        const driverId = data.driverId;
         
+        console.log(`[INFO] Driver ${driverId} started ride ${rideId} with request ${requestId}`);
+        
+        // Tìm user ID từ requestId hoặc các subscribers của tài xế
+        let userId = null;
         if (rideRequests[requestId]) {
-          // Cập nhật trạng thái chuyến đi
-          const userWs = userConnections[rideRequests[requestId].userId];
+          userId = rideRequests[requestId].userId;
+        } else if (driverLocationSubscribers[driverId]) {
+          // Tìm từ danh sách người dùng đăng ký theo dõi tài xế này
+          const subscriber = driverLocationSubscribers[driverId].find(sub => 
+            (typeof sub === 'object' && sub.requestId === requestId)
+          );
+          if (subscriber) {
+            userId = typeof subscriber === 'object' ? subscriber.userId : subscriber;
+          }
+        }
+        
+        if (userId) {
+          console.log(`[INFO] Found user ${userId} for ride ${rideId}`);
+          const userWs = userConnections[userId];
           if (userWs && userWs.readyState === 1) {
+            // Gửi cả hai loại sự kiện để đảm bảo client nhận được
+            // 1. Sự kiện startRide
+            userWs.send(JSON.stringify({
+              type: "startRide",
+              requestId: requestId,
+              rideId: rideId,
+              driverId: driverId,
+              status: "in_progress",
+              estimatedArrival: data.estimatedArrival || "Đang di chuyển"
+            }));
+            
+            // 2. Sự kiện rideStatusUpdate
             userWs.send(JSON.stringify({
               type: "rideStatusUpdate",
               requestId: requestId,
@@ -305,7 +444,13 @@ wss.on("connection", (ws) => {
               message: "Chuyến đi đã bắt đầu",
               estimatedArrival: data.estimatedArrival || "Đang di chuyển"
             }));
+            
+            console.log(`[INFO] Sent ride start notifications to user ${userId}`);
+          } else {
+            console.log(`[WARNING] User ${userId} connection not available`);
           }
+        } else {
+          console.log(`[WARNING] Could not find user for ride ${rideId} with request ${requestId}`);
         }
       }
 
@@ -342,20 +487,14 @@ wss.on("connection", (ws) => {
           // Gửi thông báo cho người dùng
           const userWs = userConnections[rideRequests[requestId].userId];
           if (userWs && userWs.readyState === 1) {
+            // Gửi một thông báo duy nhất về việc hoàn thành chuyến đi
+            // Kết hợp các thông tin từ cả hai loại thông báo trước đây
             userWs.send(JSON.stringify({
               type: "rideCompleted",
               requestId: requestId,
               rideId: data.rideId,
               driverId: driverId,
               fare: data.fare || rideRequests[requestId].fare,
-              status: "completed"
-            }));
-            
-            // Đồng thời gửi cập nhật trạng thái chuyến đi
-            userWs.send(JSON.stringify({
-              type: "rideStatusUpdate",
-              requestId: requestId,
-              rideId: data.rideId,
               status: "completed",
               message: "Chuyến đi đã hoàn thành"
             }));
@@ -463,5 +602,5 @@ const findNearbyDrivers = (userLat, userLon) => {
 };
 
 app.listen(PORT, () => {
-  console.log(`Server is running on port ${process.env.server}${PORT}`);
+  console.log(`Server is running on port ${PORT}`);
 });

@@ -54,7 +54,13 @@ export default function Rides() {
     getRecentRides();
   }, []);
 
-  const filterRides = (rides) => {
+  interface Ride {
+    id: string;
+    status: 'completed' | 'canceled' | 'ongoing' | string;
+    [key: string]: any; // Add additional properties as needed
+  }
+
+  const filterRides = (rides: Ride[]): Ride[] => {
     if (activeTab === 'all') return rides;
     if (activeTab === 'completed') return rides.filter(ride => ride.status === 'completed');
     if (activeTab === 'canceled') return rides.filter(ride => ride.status === 'canceled');
@@ -68,7 +74,7 @@ export default function Rides() {
       <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
       <SafeAreaView style={styles.container}>
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>My Rides</Text>
+          <Text style={styles.heading}>My Rides</Text>
         </View>
 
         <View style={styles.tabContainer}>
@@ -98,29 +104,29 @@ export default function Rides() {
             <Text style={styles.loadingText}>Loading rides...</Text>
           </View>
         ) : (
-          <ScrollView 
+            <ScrollView 
             style={styles.rideContainer}
             showsVerticalScrollIndicator={false}
             refreshControl={
               <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
             }
-          >
+            >
             {filteredRides && filteredRides.length > 0 ? (
-              filteredRides.map((item, index) => (
-                <RideCard item={item} key={index} />
+              [...filteredRides].reverse().map((item, index) => (
+              <RideCard item={item} key={index} />
               ))
             ) : (
               <View style={styles.emptyContainer}>
-                <Ionicons name="car-outline" size={60} color={colors.secondaryFont} />
-                <Text style={styles.emptyText}>No rides found</Text>
-                <Text style={styles.emptySubText}>
-                  {activeTab === 'all' 
-                    ? "You haven't taken any rides yet" 
-                    : `You don't have any ${activeTab} rides`}
-                </Text>
+              <Ionicons name="car-outline" size={60} color={colors.secondaryFont} />
+              <Text style={styles.emptyText}>No rides found</Text>
+              <Text style={styles.emptySubText}>
+                {activeTab === 'all' 
+                ? "You haven't taken any rides yet" 
+                : `You don't have any ${activeTab} rides`}
+              </Text>
               </View>
             )}
-          </ScrollView>
+            </ScrollView>
         )}
       </SafeAreaView>
     </>
@@ -140,10 +146,10 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
-  headerTitle: {
-    fontSize: fontSizes.FONT25,
-    fontFamily: fonts.bold,
-    color: colors.primaryText,
+  heading: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
   },
   tabContainer: {
     flexDirection: 'row',

@@ -21,6 +21,9 @@ export type images = {
   authBgDark: ImageSourcePropType;
   bgOnboarding: ImageSourcePropType;
   arrow: ImageSourcePropType;
+  userLocation: ImageSourcePropType;
+  clock: ImageSourcePropType;
+  defaultProfile: ImageSourcePropType;
 };
 
 const Images: images = {
@@ -44,5 +47,8 @@ const Images: images = {
   authBgDark: require("../../assets/images/authImage/authBgDark.png"),
   bgOnboarding: require('../../assets/images/onBoarding/bgOnboarding.png'),
   arrow: require("../../assets/images/arrow.png"),
+  userLocation: require("../../assets/images/userLocation.png"),
+  clock: require("../../assets/images/clock.png"),
+  defaultProfile: require("../../assets/images/profileImage/profileUser.png"),
 };
 export default Images;

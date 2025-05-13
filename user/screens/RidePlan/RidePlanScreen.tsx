@@ -13,10 +13,10 @@ import {
   Keyboard,
   KeyboardAvoidingView,
 } from "react-native";
-
+import React from "react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { external } from "@/styles/external.style";
-import { windowHeight, windowWidth } from "@/themes/AppConstants";
+import { fontSizes, windowHeight, windowWidth } from "@/themes/AppConstants";
 import MapView, { Marker, PROVIDER_DEFAULT, PROVIDER_GOOGLE } from "react-native-maps";
 import MapViewDirections from "react-native-maps-directions";
 import { router } from "expo-router";
@@ -34,6 +34,8 @@ import { useGetUserData } from "@/hooks/useGetUserData";
 import { commonStyles } from "@/styles/common.style";
 import { ParseDuration } from "@/utils/time/ParseDuration";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import fonts from "@/themes/AppFonts";
+import { useWebSocket } from '@/services/WebSocketService';
 
 export default function RidePlanScreen() {
   const { user } = useGetUserData();
@@ -59,111 +61,88 @@ export default function RidePlanScreen() {
     bicycling: null,
     transit: null,
   });
-  const ws = useRef<any>(null);
-  const [driverLists, setDriverLists] = useState([]);
+  const [driverLists, setDriverLists] = useState<any[]>([]);
   const [selectedDriver, setSelectedDriver] = useState<DriverType>();
   const [driverLoader, setDriverLoader] = useState(true);
   const [isKeyboardVisible, setKeyboardVisible] = useState(false);
-  const [searchHistory, setSearchHistory] = useState<{ place_id: string; description: string }[]>([]);
-  const [showSearchHistory, setShowSearchHistory] = useState(false);
   const [requestId, setRequestId] = useState<string | null>(null);
 
-  const initializeWebSocket = () => {
-    ws.current = new WebSocket(process.env.EXPO_PUBLIC_WEBSOCKET_URI!);
-    ws.current.onopen = () => {
-      console.log("Connected to websocket server");
-      setWsConnected(true);
-      
-      // Đăng ký người dùng khi kết nối
-      if (user && user.id) {
-        ws.current.send(JSON.stringify({
-          type: "userConnect",
-          userId: user.id
-        }));
-      }
-    };
-
-    ws.current.onmessage = (e: any) => {
-      try {
-        const data = JSON.parse(e.data);
-        console.log("Received message:", data.type);
-        
-        if (data.type === "nearbyDrivers") {
-          setRequestId(data.requestId);
-          getDriversData(data.drivers);
-        }
-        
-        else if (data.type === "requestSent") {
-          Toast.show(data.message, {
-            type: "success",
-            placement: "bottom",
-            duration: 3000,
-          });
-        }
-        
-        else if (data.type === "requestFailed") {
-          Toast.show(data.message, {
-            type: "danger",
-            placement: "bottom",
-            duration: 3000,
-          });
-        }
-        
-        else if (data.type === "rideAccepted") {
-          const orderData = {
-            currentLocation: currentLocation,
-            marker: marker,
-            distance: distance,
-            requestId: data.requestId, // Thêm requestId để theo dõi
-            driver: {
-              id: data.driverId,
-              name: data.driverName,
-              location: data.driverLocation,
-              estimatedArrival: data.estimatedArrival
-            }
-          };
-          
-          // Chuyển đến màn hình chi tiết chuyến đi
-          router.push({
-            pathname: "/(routes)/RideDetails",
-            params: { orderData: JSON.stringify(orderData) }
-          });
-        }
-        
-        else if (data.type === "rideRejected") {
-          Toast.show("Tài xế đã từ chối yêu cầu của bạn. Vui lòng chọn tài xế khác.", {
-            type: "warning",
-            placement: "bottom",
-            duration: 3000,
-          });
-        }
-      } catch (error) {
-        console.log("Failed to parse WebSocket message:", error);
-      }
-    };
-
-    ws.current.onerror = (e: any) => {
-      console.log("WebSocket error:", e.message);
-    };
-
-    ws.current.onclose = (e: any) => {
-      console.log("WebSocket closed:", e.code, e.reason);
-      setWsConnected(false);
-      // Attempt to reconnect after a delay
-      setTimeout(() => {
-        initializeWebSocket();
-      }, 5000);
-    };
-  };
+  // Sử dụng WebSocketService chung
+  const { addListener, send, isConnected } = useWebSocket(user?.id || null);
 
   useEffect(() => {
-    initializeWebSocket();
+    // Đăng ký các listeners cho WebSocket
+    const nearbyDriversListener = addListener('nearbyDrivers', (data: any) => {
+      setRequestId(data.requestId);
+      getDriversData(data.drivers);
+    });
+    
+    const requestSentListener = addListener('requestSent', (data: any) => {
+      Toast.show(data.message, {
+        type: "success",
+        placement: "bottom",
+        duration: 3000,
+      });
+    });
+    
+    const requestFailedListener = addListener('requestFailed', (data: any) => {
+      Toast.show(data.message, {
+        type: "danger",
+        placement: "bottom",
+        duration: 3000,
+      });
+    });
+    
+    const rideAcceptedListener = addListener('rideAccepted', (data: any) => {
+      const orderData = {
+        currentLocation: currentLocation,
+        marker: marker,
+        distance: distance,
+        requestId: data.requestId,
+        currentLocationName: currentLocationName,
+        destinationLocationName: destinationLocationName,
+        driver: {
+          id: data.driverId,
+          name: data.driverName,
+          location: data.driverLocation,
+          driverPhoneNumber: data.driverPhoneNumber,
+          estimatedArrival: data.estimatedArrival
+        }
+      };
+      
+      // Chuyển đến màn hình chi tiết chuyến đi
+      router.push({
+        pathname: "/(routes)/RideDetails",
+        params: { orderData: JSON.stringify(orderData) }
+      });
+    });
+    
+    const rideRejectedListener = addListener('rideRejected', (data: any) => {
+      Toast.show("Tài xế đã từ chối yêu cầu của bạn. Vui lòng chọn tài xế khác.", {
+        type: "warning",
+        placement: "bottom",
+        duration: 3000,
+      });
+    });
+    
+    // Theo dõi trạng thái kết nối
+    const connectionListener = addListener('connection', (data: any) => {
+      setWsConnected(data.connected);
+    });
+    
+    // Cập nhật trạng thái kết nối hiện tại
+    setWsConnected(isConnected());
+    
     return () => {
-      if (ws.current) {
-        ws.current.close();
-      }
+      // Hủy đăng ký các listeners khi component unmount
+      nearbyDriversListener();
+      requestSentListener();
+      requestFailedListener();
+      rideAcceptedListener();
+      rideRejectedListener();
+      connectionListener();
     };
-  }, []);
+  }, [user?.id, currentLocation, marker, distance]);
 
   useEffect(() => {
     (async () => {
@@ -295,85 +274,23 @@ export default function RidePlanScreen() {
     setTravelTimes(travelTimes);
   };
 
-  const getSearchHistory = async () => {
-    try {
-      const history = await AsyncStorage.getItem('searchHistory');
-      
-      if (history) {
-        try {
-          const parsedHistory = JSON.parse(history);
-          if (!Array.isArray(parsedHistory)) {
-            // Nếu dữ liệu không phải là mảng thì xóa và tạo mới
-            await AsyncStorage.setItem('searchHistory', JSON.stringify([]));
-            setSearchHistory([]);
-            return;
-          }
-          
-          const uniqueHistory = parsedHistory.filter(
-            (item: any, index: number, self: any[]) =>
-              item && item.place_id && // Đảm bảo item có tồn tại và có place_id
-              index === self.findIndex((t) => t && t.place_id && t.place_id === item.place_id)
-          );
-          setSearchHistory(uniqueHistory.slice(0, 4));
-        } catch (error) {
-          // Nếu parse thất bại, đặt lại history
-          console.log('Error parsing search history:', error);
-          await AsyncStorage.setItem('searchHistory', JSON.stringify([]));
-          setSearchHistory([]);
-        }
-      }
-    } catch (error) {
-      console.log('Error loading search history:', error);
-    }
-  };
-
-  const saveToSearchHistory = async (place: any) => {
-    try {
-      // Đảm bảo place có đủ các thuộc tính cần thiết
-      if (!place || !place.place_id) return;
-      
-      const placeToSave = {
-        place_id: place.place_id,
-        description: place.description || 'Unknown location' // Thêm giá trị mặc định nếu description là undefined
-      };
-      
-      const history = await AsyncStorage.getItem('searchHistory');
-      let searchHistory = history ? JSON.parse(history) : [];
-      const existingIndex = searchHistory.findIndex((item: { place_id: string }) => item.place_id === placeToSave.place_id);
-      if (existingIndex !== -1) {
-        searchHistory.splice(existingIndex, 1);
-      }
-      searchHistory.unshift(placeToSave);
-      const uniqueHistory = searchHistory.filter(
-        (item: any, index: number, self: any[]) =>
-          index === self.findIndex((t) => t.place_id === item.place_id)
-      );
-      const limitedHistory = uniqueHistory.slice(0, 4);
-      await AsyncStorage.setItem('searchHistory', JSON.stringify(limitedHistory));
-      setSearchHistory(limitedHistory);
-    } catch (error) {
-      console.log('Error saving search history:', error);
-    }
-  };
-
   const requestNearbyDrivers = () => {
     if (currentLocation && wsConnected) {
-      ws.current.send(
-        JSON.stringify({
-          type: "requestRide",
-          role: "user",
-          userId: user?.id,
-          userName: user?.name,
-          latitude: currentLocation.latitude,
-          longitude: currentLocation.longitude,
-          locationName: currentLocationName,
-          destination: marker ? {
-            latitude: marker.latitude,
-            longitude: marker.longitude,
-            locationName: destinationLocationName
-          } : undefined
-        })
-      );
+      send({
+        type: "requestRide",
+        role: "user",
+        userId: user?.id,
+        userName: user?.name,
+        latitude: currentLocation.latitude,
+        longitude: currentLocation.longitude,
+        locationName: currentLocationName,
+        destination: marker ? {
+          latitude: marker.latitude,
+          longitude: marker.longitude,
+          locationName: destinationLocationName
+        } : undefined,
+        distance: distance?.toFixed(2) || 0
+      });
       
       setDriverLoader(true); // Hiển thị loader khi tìm kiếm tài xế
       
@@ -443,16 +360,6 @@ export default function RidePlanScreen() {
       if (currentLocation && lat && lng) {
         await fetchTravelTimes(currentLocation, selectedDestination);
       }
-      
-      // Lưu địa điểm vào lịch sử tìm kiếm nếu có đủ thông tin
-      if (placeId && (placeDescription || response.data.result.formatted_address)) {
-        saveToSearchHistory({ 
-          place_id: placeId, 
-          description: placeDescription || response.data.result.formatted_address 
-        });
-      }
-      
-      setShowSearchHistory(false);
     } catch (error) {
       console.log("Error handling place selection:", error);
       Toast.show("Có lỗi khi chọn địa điểm. Vui lòng thử lại.", {
@@ -462,10 +369,6 @@ export default function RidePlanScreen() {
       });
     }
   };
-
-  useEffect(() => {
-    getSearchHistory();
-  }, []);
 
   const calculateDistance = (lat1: any, lon1: any, lat2: any, lon2: any) => {
     var p = 0.017453292519943295; 
@@ -498,7 +401,12 @@ export default function RidePlanScreen() {
   }, [marker, currentLocation]);
 
   const getDriversData = async (drivers: any) => {
-    if (drivers.length === 0) {
+    // Lọc ra các tài xế có ID hợp lệ
+    const validDrivers = drivers.filter((driver: any) => 
+      driver.id && driver.id !== "undefined" && driver.id !== "null"
+    );
+    
+    if (validDrivers.length === 0) {
       setDriverLoader(false);
       Toast.show(
         "Không có tài xế nào gần bạn. Vui lòng thử lại sau!",
@@ -511,27 +419,65 @@ export default function RidePlanScreen() {
       return;
     }
     
-    const driverIds = drivers.map((driver: any) => driver.id).join(",");
+    const driverIds = validDrivers.map((driver: any) => driver.id).join(",");
     try {
+      console.log("Fetching driver data for IDs:", driverIds);
       const response = await axios.get(
         `${process.env.EXPO_PUBLIC_SERVER_URI}/driver/get-drivers-data`,
         {
           params: { ids: driverIds },
+          timeout: 10000 // Thêm timeout để không đợi quá lâu
         }
       );
 
-      const driverData = response.data;
-      setDriverLists(driverData);
-    } catch (error) {
-      console.log("Error getting driver data:", error);
-      Toast.show(
-        "Không thể lấy thông tin tài xế. Vui lòng thử lại!",
-        {
-          type: "danger",
-          placement: "bottom",
-          duration: 3000,
+      if (response.data && Array.isArray(response.data)) {
+        setDriverLists(response.data);
+        
+        // Kiểm tra nếu không có dữ liệu trả về
+        if (response.data.length === 0) {
+          Toast.show(
+            "Không có thông tin tài xế. Vui lòng thử lại sau!",
+            {
+              type: "warning",
+              placement: "bottom",
+              duration: 3000,
+            }
+          );
         }
-      );
+      } else {
+        console.log("Invalid response format:", response.data);
+        Toast.show(
+          "Định dạng dữ liệu không hợp lệ. Vui lòng thử lại!",
+          {
+            type: "danger",
+            placement: "bottom",
+            duration: 3000,
+          }
+        );
+      }
+    } catch (error: any) {
+      console.log("Error getting driver data:", error);
+      
+      // Hiển thị thông báo chi tiết hơn về lỗi
+      let errorMessage = "Không thể lấy thông tin tài xế. Vui lòng thử lại!";
+      if (error.response) {
+        // Server trả về lỗi với mã trạng thái
+        console.log("Error status:", error.response.status);
+        console.log("Error data:", error.response.data);
+        
+        if (error.response.status === 500) {
+          errorMessage = "Lỗi máy chủ. Vui lòng thử lại sau!";
+        }
+      } else if (error.request) {
+        // Yêu cầu đã được gửi nhưng không nhận được phản hồi
+        errorMessage = "Không thể kết nối đến máy chủ. Vui lòng kiểm tra kết nối!";
+      }
+      
+      Toast.show(errorMessage, {
+        type: "danger",
+        placement: "bottom",
+        duration: 3000,
+      });
     } finally {
       setDriverLoader(false);
     }
@@ -558,29 +504,64 @@ export default function RidePlanScreen() {
 
     try {
       // Gửi thông tin đặt xe cho tài xế thông qua WebSocket
-      ws.current.send(JSON.stringify({
+      send({
         type: "bookRide",
         role: "user",
         requestId: requestId,
         userId: user?.id,
         driverId: selectedDriver.id,
         distance: distance.toFixed(2),
+        phoneNumber: user?.phoneNumber,
         fare: (distance * parseInt(selectedDriver.rate)).toFixed(2),
         destination: {
           latitude: marker.latitude,
           longitude: marker.longitude,
           locationName: destinationLocationName
         }
-      }));
-      
-      Toast.show("Đã gửi yêu cầu đến tài xế!", {
-        type: "success",
-        placement: "bottom",
-        duration: 3000,
       });
+      
+      // Hiển thị thông báo đang chờ phản hồi từ tài xế
+      Toast.show("Đang chờ phản hồi từ tài xế...", {
+        type: "info",
+        placement: "bottom",
+        duration: 5000,
+      });
+      
+      // Lưu lịch sử tìm kiếm (nếu cần)
+      const hasHistory = await AsyncStorage.getItem('searchHistory');
+      let history = [];
+      
+      if (hasHistory) {
+        history = JSON.parse(hasHistory);
+        
+        // Kiểm tra nếu đã có địa điểm này trong lịch sử
+        const existingIndex = history.findIndex((h: any) => 
+          h.place === destinationLocationName
+        );
+        
+        if (existingIndex !== -1) {
+          // Đưa địa điểm đã tồn tại lên đầu danh sách
+          history.splice(existingIndex, 1);
+        }
+      }
+      
+      // Thêm địa điểm mới vào đầu danh sách
+      history.unshift({ 
+        place: destinationLocationName,
+        coordinates: marker,
+        timestamp: new Date().toISOString()
+      });
+      
+      // Giới hạn danh sách lịch sử chỉ lưu tối đa 5 mục
+      if (history.length > 5) {
+        history = history.slice(0, 5);
+      }
+      
+      await AsyncStorage.setItem('searchHistory', JSON.stringify(history));
+      
     } catch (error) {
-      console.error("Lỗi khi gửi yêu cầu chuyến đi:", error);
-      Toast.show("Không thể gửi yêu cầu. Vui lòng thử lại.", {
+      console.log("Error sending booking request:", error);
+      Toast.show("Có lỗi xảy ra, vui lòng thử lại!", {
         type: "danger",
         placement: "bottom",
         duration: 3000,
@@ -596,6 +577,8 @@ export default function RidePlanScreen() {
           style={{ flex: 1 }}
           region={region}
           provider={PROVIDER_DEFAULT}
+          showsUserLocation={true}
+          showsMyLocationButton={true}
           onRegionChangeComplete={(region) => setRegion(region)}
         >
           {marker && (
@@ -603,13 +586,6 @@ export default function RidePlanScreen() {
               coordinate={marker}
               title="Điểm đến"
               pinColor="#FF3B30"
-            />
-          )}
-          {currentLocation && (
-            <Marker 
-              coordinate={currentLocation}
-              title="Vị trí của bạn"
-              pinColor="#007AFF"
             />
           )}
           {currentLocation && marker && (
@@ -656,107 +632,138 @@ export default function RidePlanScreen() {
                         paddingBottom: windowHeight(20),
                         height: windowHeight(280),
                       }}
+                      showsVerticalScrollIndicator={false}
                     >
-                      <View
-                        style={{
-                          borderBottomWidth: 1,
-                          borderBottomColor: "#b5b5b5",
-                          paddingBottom: windowHeight(10),
-                          flexDirection: "row",
-                        }}
-                      >
-                        <Pressable onPress={() => setLocationSelected(false)}>
+                      <View style={styles.headerContainer}>
+                        <Pressable 
+                          onPress={() => setLocationSelected(false)}
+                          style={styles.backButton}
+                        >
                           <LeftArrow />
                         </Pressable>
-                        <Text
-                          style={{
-                            margin: "auto",
-                            fontSize: 20,
-                            fontWeight: "600",
-                          }}
-                        >
-                          Gathering options
+                        <Text style={styles.headerTitle}>
+                          Chọn phương tiện
                         </Text>
                       </View>
-                      <View style={{ padding: windowWidth(10) }}>
-                        {driverLists?.map((driver: DriverType) => (
-                          <Pressable
-                            key={driver.id}
-                            style={{
-                              width: windowWidth(420),
-                              borderWidth:
-                                selectedVehicle === driver.vehicleType ? 2 : 0,
-                              borderColor: selectedVehicle === driver.vehicleType ? color.primary : 'transparent',
-                              borderRadius: 10,
-                              padding: 10,
-                              marginVertical: 5,
-                            }}
-                            onPress={() => {
-                              setSelectedVehicle(driver.vehicleType);
-                              setSelectedDriver(driver);
-                            }}
-                          >
-                            <View style={{ alignItems: "center" }}>
-                              <Image
-                                source={
-                                  driver?.vehicleType === "Car"
-                                    ? require("@/assets/images/vehicles/car.png")
-                                    : driver?.vehicleType === "Motorcycle"
-                                    ? require("@/assets/images/vehicles/bike.png")
-                                    : require("@/assets/images/vehicles/bike.png")
-                                }
-                                style={{ width: 90, height: 80 }}
-                              />
-                            </View>
-                            <View
-                              style={{
-                                flexDirection: "row",
-                                alignItems: "center",
-                                justifyContent: "space-between",
-                              }}
-                            >
-                              <View>
-                                <Text style={{ fontSize: 20, fontWeight: "600" }}>
-                                  RideWave {driver?.vehicleType}
-                                </Text>
-                                <Text style={{ fontSize: 16 }}>
-                                  {getEstimatedArrivalTime(travelTimes.driving)}{" "}
-                                  dropOff
-                                </Text>
-                              </View>
-                              <Text
-                                style={{
-                                  fontSize: windowWidth(20),
-                                  fontWeight: "600",
+                      
+                      <View style={styles.driversContainer}>
+                        {driverLists?.map((driver: DriverType, index) => {
+                          const isSelected = selectedDriver?.id === driver.id;
+                          return (
+                            <View key={driver.id}>
+                              <Pressable
+                                style={[
+                                  styles.driverCard,
+                                  isSelected && styles.driverCardSelected
+                                ]}
+                                onPress={() => {
+                                  setSelectedVehicle(driver.vehicleType);
+                                  setSelectedDriver(driver);
                                 }}
                               >
-                                VND{" "}
-                                {(
-                                  distance.toFixed(2) * parseInt(driver.rate)
-                                ).toFixed(2)}
-                              </Text>
+                                <View style={styles.cardHeader}>
+                                  <View style={styles.vehicleTypeTag}>
+                                    <Text style={styles.vehicleTypeText}>{driver.vehicleType}</Text>
+                                  </View>
+                                  {isSelected && (
+                                    <View style={styles.selectedBadge}>
+                                      <Text style={styles.selectedText}>Đã chọn</Text>
+                                    </View>
+                                  )}
+                                </View>
+                                
+                                <View style={styles.cardContent}>
+                                  <View style={styles.imageContainer}>
+                                    <Image
+                                      source={
+                                        driver?.vehicleType === "Car"
+                                          ? require("@/assets/images/vehicles/car.png")
+                                          : driver?.vehicleType === "Motorcycle"
+                                          ? require("@/assets/images/vehicles/bike.png")
+                                          : require("@/assets/images/vehicles/bike.png")
+                                      }
+                                      style={styles.vehicleImage}
+                                    />
+                                    
+                                    <View style={styles.driverInfoChip}>
+                                      <Text style={styles.driverName} numberOfLines={1}>
+                                        {driver.name || 'Tài xế'}
+                                      </Text>
+                                      <Text style={styles.driverRating}>★ {driver.rating || '4.8'}</Text>
+                                    </View>
+                                  </View>
+                                  
+                                  <View style={styles.rideInfoContainer}>
+                                    <View style={styles.rideDetail}>
+                                      <Text style={styles.vehicleName}>
+                                        RideWave {driver?.vehicleType}
+                                      </Text>
+                                      <View style={styles.timeRow}>
+                                        <Image 
+                                          source={require('@/assets/images/clock.png')} 
+                                          style={styles.smallIcon} 
+                                        />
+                                        <Text style={styles.timeText}>
+                                          {getEstimatedArrivalTime(travelTimes.driving)} dropOff
+                                        </Text>
+                                      </View>
+                                    </View>
+                                    
+                                    <View style={styles.fareContainer}>
+                                      <Text style={styles.fareAmount}>
+                                        {(distance * parseInt(driver.rate)).toFixed(2)}
+                                      </Text>
+                                      <Text style={styles.fareCurrency}>VND</Text>
+                                    </View>
+                                  </View>
+                                  
+                                  {isSelected && (
+                                    <View style={styles.featureList}>
+                                      <View style={styles.featureItem}>
+                                        <Image 
+                                          source={require('@/assets/images/clock.png')} 
+                                          style={styles.featureIcon} 
+                                        />
+                                        <Text style={styles.featureText}>Thời gian chờ: 2-3 phút</Text>
+                                      </View>
+                                      <View style={styles.featureItem}>
+                                        <Image 
+                                          source={require('@/assets/images/location.png')} 
+                                          style={styles.featureIcon} 
+                                        />
+                                        <Text style={styles.featureText}>Khoảng cách: {distance.toFixed(2)} km</Text>
+                                      </View>
+                                    </View>
+                                  )}
+                                </View>
+                              </Pressable>
                             </View>
-                          </Pressable>
-                        ))}
+                          );
+                        })}
+                        
+                        {driverLists?.length === 0 && (
+                          <View style={styles.noDriversContainer}>
+                            <Text style={styles.noDriversText}>
+                              Không tìm thấy tài xế gần đây
+                            </Text>
+                            <Text style={styles.noDriversSubText}>
+                              Vui lòng thử lại sau vài phút
+                            </Text>
+                          </View>
+                        )}
 
-                        <View
-                          style={{
-                          paddingHorizontal: windowWidth(10),
-                          marginTop: windowHeight(15),
-                          }}
-                        >
+                        <View style={styles.bookingButtonContainer}>
                           <TouchableOpacity
-                          style={{
-                            backgroundColor: "#000",
-                            paddingVertical: windowHeight(10),
-                            borderRadius: 5,
-                            alignItems: "center",
-                          }}
-                          onPress={() => handleOrder()}
+                            style={[
+                              styles.bookingButton,
+                              selectedDriver ? styles.activeButton : styles.disabledButton
+                            ]}
+                            onPress={() => handleOrder()}
+                            disabled={!selectedDriver}
                           >
-                          <Text style={{ color: "#fff", fontSize: 16 }}>
-                            Confirm Booking
-                          </Text>
+                            <Text style={styles.bookingButtonText}>
+                              Xác nhận đặt xe
+                            </Text>
                           </TouchableOpacity>
                         </View>
                       </View>
@@ -885,20 +892,10 @@ export default function RidePlanScreen() {
                             value: query,
                             onFocus: () => {
                               setKeyboardVisible(true);
-                              setShowSearchHistory(true);
-                              if (searchHistory.length === 0) {
-                                getSearchHistory();
-                              }
-                              if (query.length > 2) {
-                                setShowSearchHistory(false);
-                              }
                             },
                             onBlur: () => {
                               if (places.length === 0) {
                                 setKeyboardVisible(false);
-                                setTimeout(() => {
-                                  setShowSearchHistory(false);
-                                }, 200);
                               }
                             }
                           }}
@@ -910,43 +907,7 @@ export default function RidePlanScreen() {
                     </View>
                   </View>
                   
-                    {/* Show search history */}
-                    {searchHistory.length >= 0 && (
-                    <View style={styles.historyContainer}>
-                      <View style={styles.historyHeader}>
-                      <Text style={styles.historyTitle}>Search history</Text>
-                      <TouchableOpacity 
-                        onPress={async () => {
-                        await AsyncStorage.removeItem('searchHistory');
-                        setSearchHistory([]);
-                        }}
-                      >
-                        <Text style={styles.clearHistoryText}>Clear</Text>
-                      </TouchableOpacity>
-                      </View>
-                      <ScrollView 
-                      style={{ maxHeight: windowHeight(200) }}
-                      keyboardShouldPersistTaps="handled"
-                      >
-                      {searchHistory.map((place, index) => (
-                        <Pressable
-                        key={index}
-                        style={styles.historyItem}
-                        onPress={() => handlePlaceSelect(place.place_id, place.description)}
-                        >
-                        <View style={styles.historyIconContainer}>
-                          <Text style={styles.historyIcon}>🕒</Text>
-                        </View>
-                        <Text style={styles.historyText} numberOfLines={1} ellipsizeMode="tail">
-                          {place.description}
-                        </Text>
-                        </Pressable>
-                      ))}
-                      </ScrollView>
-                    </View>
-                    )}
-
-                    {/* Search results */}
+                  {/* Search results */}
                   <ScrollView 
                     style={{ 
                       maxHeight: windowHeight(200),
@@ -961,9 +922,9 @@ export default function RidePlanScreen() {
                         style={{
                           flexDirection: "row",
                           alignItems: "center",
-                          marginBottom: windowHeight(20),
+                          marginBottom: windowHeight(5),
                           paddingHorizontal: 10,
-                          paddingVertical: 10,
+                          paddingVertical: 6,
                         }}
                         onPress={() => handlePlaceSelect(place.place_id, place.description)}
                       >
@@ -1072,4 +1033,248 @@ const styles = StyleSheet.create({
     color: '#333',
     flex: 1,
   },
+  
+  // Các style mới
+  headerContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingBottom: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#EEEEEE',
+    marginBottom: 15,
+  },
+  backButton: {
+    padding: 8,
+    borderRadius: 20,
+    backgroundColor: '#F0F0F0',
+  },
+  headerTitle: {
+    flex: 1,
+    textAlign: 'center',
+    fontSize: 20,
+    fontWeight: '600',
+    marginRight: 35,
+    fontFamily: fonts.medium,
+  },
+  driversContainer: {
+    paddingHorizontal: 5,
+  },
+  driverCard: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 15,
+    paddingHorizontal: 15, 
+    paddingVertical: 15,
+    marginBottom: 15,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.1,
+        shadowRadius: 5,
+      },
+      android: {
+        elevation: 3,
+      },
+    }),
+    borderWidth: 1,
+    borderColor: '#F0F0F0',
+  },
+  driverCardSelected: {
+    borderColor: color.primary,
+    borderWidth: 2,
+    ...Platform.select({
+      ios: {
+        shadowOpacity: 0.25,
+        shadowRadius: 8,
+      },
+      android: {
+        elevation: 5,
+      },
+    }),
+  },
+  cardHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 10,
+  },
+  vehicleTypeTag: {
+    backgroundColor: '#F0F7FF',
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+    borderRadius: 20,
+  },
+  vehicleTypeText: {
+    color: '#3498db',
+    fontWeight: '600',
+    fontSize: 12,
+    fontFamily: fonts.medium,
+  },
+  selectedBadge: {
+    backgroundColor: '#E0F2F1',
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 20,
+  },
+  selectedText: {
+    color: '#009688',
+    fontWeight: '600',
+    fontSize: 12,
+    fontFamily: fonts.medium,
+  },
+  cardContent: {
+    width: '100%',
+  },
+  imageContainer: {
+    alignItems: 'center',
+    position: 'relative',
+    marginBottom: 15,
+  },
+  vehicleImage: {
+    width: 180,
+    height: 100,
+    resizeMode: 'contain',
+  },
+  driverInfoChip: {
+    position: 'absolute',
+    top: 5,
+    right: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  driverName: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    marginRight: 5,
+    fontFamily: fonts.regular,
+  },
+  driverRating: {
+    color: '#FFD700',
+    fontSize: 12,
+    fontFamily: fonts.medium,
+  },
+  rideInfoContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingBottom: 10,
+    borderBottomWidth: color.border ? 1 : 0,
+    borderBottomColor: '#EEEEEE',
+  },
+  rideDetail: {
+    flex: 1,
+  },
+  vehicleName: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#222222',
+    marginBottom: 5,
+    fontFamily: fonts.medium,
+  },
+  timeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  smallIcon: {
+    width: 14,
+    height: 14,
+    marginRight: 5,
+  },
+  timeText: {
+    fontSize: 14,
+    color: '#666666',
+    fontFamily: fonts.regular,
+  },
+  fareContainer: {
+    alignItems: 'flex-end',
+  },
+  fareAmount: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#222222',
+    fontFamily: fonts.medium,
+  },
+  fareCurrency: {
+    fontSize: 12,
+    color: '#666666',
+    fontFamily: fonts.regular,
+  },
+  featureList: {
+    marginTop: 10,
+    paddingTop: 10,
+  },
+  featureItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 5,
+  },
+  featureIcon: {
+    width: 16,
+    height: 16,
+    marginRight: 8,
+  },
+  featureText: {
+    fontSize: 14,
+    color: '#666666',
+    fontFamily: fonts.regular,
+  },
+  bookingButtonContainer: {
+    marginTop: 10,
+    marginBottom: 20,
+    paddingHorizontal: 10,
+  },
+  bookingButton: {
+    height: 52,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 12,
+  },
+  activeButton: {
+    backgroundColor: color.primary,
+    ...Platform.select({
+      ios: {
+        shadowColor: color.primary,
+        shadowOffset: { width: 0, height: 2 },
+        shadowOpacity: 0.3,
+        shadowRadius: 4,
+      },
+      android: {
+        elevation: 4,
+      },
+    }),
+  },
+  disabledButton: {
+    backgroundColor: '#95a5a6',
+    opacity: 0.7,
+  },
+  bookingButtonText: {
+    color: 'white',
+    fontSize: 18,
+    fontFamily: fonts.medium,
+  },
+  noDriversContainer: {
+    alignItems: 'center',
+    marginVertical: 30,
+  },
+  noDriversImage: {
+    width: 120,
+    height: 120,
+    marginBottom: 15,
+  },
+  noDriversText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#333333',
+    marginBottom: 5,
+    fontFamily: fonts.medium,
+  },
+  noDriversSubText: {
+    fontSize: 14,
+    color: '#666666',
+    fontFamily: fonts.regular,
+  }
 });

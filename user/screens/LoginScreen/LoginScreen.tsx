@@ -36,14 +36,6 @@ export default function LoginScreen() {
         })
         .then((res) => {
           setLoading(false);
-          // Nếu server trả về OTP (trong môi trường development), hiển thị nó
-          if (res.data.otp) {
-            setGeneratedOtp(res.data.otp);
-            toast.show(`Development OTP: ${res.data.otp}`, {
-              placement: "bottom",
-              duration: 5000,
-            });
-          }
           router.push({
             pathname: "/(routes)/OtpVerification",
             params: { phoneNumber: fullPhoneNumber },

@@ -2,172 +2,190 @@ import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
 import React from "react";
 import { useTheme } from "@react-navigation/native";
 import Images from "@/utils/images";
-import { Gps, Location, Star } from "@/utils/icons";
+import { LocationIcon, Star } from "@/utils/icons";
 import color from "@/themes/AppColors";
 import { fontSizes, windowHeight, windowWidth } from "@/themes/AppConstants";
 import fonts from "@/themes/AppFonts";
+import { router } from "expo-router";
 
 export default function RideCard({ item }: { item: any }) {
   const { colors } = useTheme();
 
+  // Hàm định dạng lại ngày tháng
+  const formatDate = (dateString: string | undefined): string => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('vi-VN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('vi-VN', { 
+      style: 'currency', 
+      currency: 'VND',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0 
+    }).format(amount);
+  };
+
+  // Xử lý khi nhấn vào card để xem chi tiết
+  const handleViewDetails = () => {
+    router.push({
+      pathname: "/RideDetails",
+      params: { rideId: item.id }
+    });
+  };
+
   return (
-    <View
+    <TouchableOpacity
       style={[
         styles.main,
-        { backgroundColor: colors.card, borderColor: colors.border },
+        { backgroundColor: colors.card, shadowColor: colors.text },
       ]}
+      onPress={handleViewDetails}
     >
-      <View style={[styles.top, { backgroundColor: colors.background }]}>
-        <View style={[styles.alignment, { flexDirection: "row" }]}>
-          <View style={[styles.profile, { flexDirection: "row" }]}>
-            <Image source={Images.user} style={styles.userImage} />
-            <Text style={[styles.userName, { color: colors.text }]}>
-              {item?.user?.name}
-            </Text>
-          </View>
-          <View style={styles.rate}>
-            <Star />
-            <Text style={[styles.rating, { color: colors.text }]}>5</Text>
-            <View
-              style={[styles.verticalBorder, { borderColor: colors.border }]}
-            />
-            <Text style={styles.price}>BDT {item.charge}</Text>
-          </View>
+      <View style={styles.rideHeader}>
+        <Text style={styles.timing}>{formatDate(item.createdAt)}</Text>
+        <Text style={styles.price}>{formatCurrency(item.charge)}</Text>
+      </View>
+      
+      <View style={styles.rideRoute}>
+        <View style={styles.routeDot} />
+        <Text style={[styles.routeText, { color: colors.text }]}>
+          {item.currentLocationName}
+        </Text>
+      </View>
+      
+      <View style={styles.rideRoute}>
+        <View style={[styles.routeDot, { backgroundColor: color.primary }]} />
+        <Text style={[styles.routeText, { color: colors.text }]}>
+          {item.destinationLocationName}
+        </Text>
+      </View>
+      
+      <View style={styles.rideFooter}>
+        <View style={styles.userContainer}>
+          <Image source={Images.user} style={styles.userImage} />
+          <Text style={[styles.userName, { color: colors.text }]}>
+            {item?.user?.name || "Passenger"}
+          </Text>
         </View>
-        <View style={[styles.alignment, { flexDirection: "row" }]}>
-          <Text style={styles.timing}>{item.createdAt?.slice(0, 10)}</Text>
-          <View style={styles.rate}>
-            <Location color={colors.text} />
+        
+        <View style={styles.detailsContainer}>
+          <View style={styles.distanceContainer}>
+            <LocationIcon color={colors.text} />
             <Text style={[styles.distance, { color: colors.text }]}>
               {item.distance}
             </Text>
           </View>
-        </View>
-      </View>
-      <View
-        style={[
-          styles.bottom,
-          styles.alignment,
-          { backgroundColor: colors.background },
-        ]}
-      >
-        <View style={{ flexDirection: "row", height: "auto" }}>
-          <View style={styles.leftView}>
-            <Location color={colors.text} />
-            <View
-              style={[styles.verticalDot, { borderColor: color.darkBorder }]}
-            />
-            <Gps colors={colors.text} />
-          </View>
-          <View style={styles.rightView}>
-            <Text style={[styles.pickup, { color: colors.text }]}>
-              {item.currentLocationName}
-            </Text>
-            <Text style={[styles.drop, { color: colors.text }]}>
-              {item.destinationLocationName}
+          
+          <View style={styles.ratingContainer}>
+            <Star />
+            <Text style={[styles.rating, { color: colors.text }]}>
+              {item.rating || "N/A"}
             </Text>
           </View>
         </View>
       </View>
-    </View>
+    </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   main: {
-    width: "100%",
-    borderWidth: 1,
-    borderRadius: 5,
-    padding: windowWidth(5),
-    marginVertical: 5,
+    backgroundColor: '#FFFFFF',
+    padding: windowWidth(16),
+    marginBottom: windowHeight(12),
+    borderRadius: 12,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  top: {
-    flex: 1,
-    marginBottom: windowHeight(1.5),
-    paddingHorizontal: windowWidth(3),
-    borderRadius: 5,
-    paddingVertical: windowHeight(5),
-  },
-  alignment: {
-    justifyContent: "space-between",
-  },
-  profile: {
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  userImage: {
-    height: windowHeight(35),
-    width: windowWidth(35),
-    resizeMode: "contain",
-  },
-  userName: {
-    marginHorizontal: windowWidth(5),
-    fontFamily: fonts.medium,
-    fontSize: fontSizes.FONT20,
-  },
-  rate: {
-    flexDirection: "row",
-    marginHorizontal: windowWidth(5),
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  rating: {
-    marginHorizontal: windowWidth(5),
-    fontFamily: fonts.medium,
-    fontSize: fontSizes.FONT20,
-  },
-  verticalBorder: {
-    borderLeftWidth: 1,
-    height: windowHeight(15),
-    marginHorizontal: windowWidth(5),
-  },
-  price: {
-    color: color.primary,
-    marginHorizontal: windowWidth(0.4),
-    fontFamily: fonts.bold,
-    fontSize: fontSizes.FONT20,
-  },
-  border: {
-    borderStyle: "dashed",
-    borderBottomWidth: 5,
-    borderColor: color.border,
-    marginVertical: windowHeight(1.5),
+  rideHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: windowHeight(12),
+    paddingBottom: windowHeight(8),
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
   },
   timing: {
+    fontSize: fontSizes.FONT14,
     color: color.secondaryFont,
     fontFamily: fonts.medium,
-    fontSize: fontSizes.FONT20,
+  },
+  price: {
+    fontSize: fontSizes.FONT14,
+    fontFamily: fonts.bold,
+    color: color.primary,
+  },
+  rideRoute: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: windowHeight(6),
+  },
+  routeDot: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: '#8F8F8F',
+    marginRight: windowWidth(10),
+  },
+  routeText: {
+    fontSize: fontSizes.FONT14,
+    fontFamily: fonts.medium,
+    flex: 1,
+  },
+  rideFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: windowHeight(12),
+    paddingTop: windowHeight(10),
+    borderTopWidth: 1,
+    borderTopColor: '#F0F0F0',
+  },
+  userContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  userImage: {
+    height: windowHeight(24),
+    width: windowHeight(24),
+    borderRadius: windowHeight(12),
+    marginRight: windowWidth(6),
+  },
+  userName: {
+    fontFamily: fonts.medium,
+    fontSize: fontSizes.FONT14,
+  },
+  detailsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  distanceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: windowWidth(12),
   },
   distance: {
+    marginLeft: windowWidth(4),
     fontFamily: fonts.medium,
-    fontSize: fontSizes.FONT18,
+    fontSize: fontSizes.FONT12,
   },
-  bottom: {
-    flex: 1,
-    paddingHorizontal: windowWidth(5),
-    borderRadius: 5,
-    paddingVertical: windowHeight(5),
+  ratingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  leftView: {
-    marginRight: windowWidth(5),
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: windowHeight(3),
-    marginTop: windowHeight(4),
-  },
-  rightView: {
-    marginTop: windowHeight(5),
-  },
-  verticalDot: {
-    borderLeftWidth: 1,
-    height: windowHeight(20),
-    marginHorizontal: 5,
-  },
-  pickup: {
-    fontSize: fontSizes.FONT18,
-  },
-  drop: {
-    fontSize: fontSizes.FONT18,
-    paddingTop: windowHeight(20),
+  rating: {
+    marginLeft: windowWidth(4),
+    fontFamily: fonts.medium,
+    fontSize: fontSizes.FONT12,
   },
 });

@@ -24,7 +24,7 @@ export default function OtpVerificationScreen() {
       });
     } else {
       setLoader(true);
-      const otpNumbers = `${otp}`; 2
+      const otpNumbers = `${otp}`;
       await axios
         .post(`${process.env.EXPO_PUBLIC_SERVER_URI}/verify-otp`, {
           phoneNumber: phoneNumber,

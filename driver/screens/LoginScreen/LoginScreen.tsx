@@ -38,10 +38,6 @@ export default function LoginScreen() {
                     // Nếu server trả về OTP (trong môi trường development), hiển thị nó
                     if (res.data.otp) {
                         setGeneratedOtp(res.data.otp);
-                        Toast.show(`Development OTP: ${res.data.otp}`, {
-                            placement: "bottom",
-                            duration: 5000,
-                        });
                     }
                     const driver = {
                         phoneNumber: fullPhoneNumber,
@@ -66,7 +62,7 @@ export default function LoginScreen() {
     };
     return (
         <AuthContainer
-            topSpace={windowHeight(180)}
+            topSpace={windowHeight(210)}
             imageShow={true}
             container={
                 <View>

@@ -1,7 +1,7 @@
 import Svg, {Path} from 'react-native-svg';
 import React from 'react';
 
-export function Location({color} : {color?: string}) {
+export function LocationIcon({color} : {color?: string}) {
   return (
     <Svg width="18" height="18" viewBox="0 0 18 18" fill="none">
       <Path

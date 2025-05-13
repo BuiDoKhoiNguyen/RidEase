@@ -7,7 +7,7 @@ import { external } from '@/styles/external.style';
 import color from '@/themes/AppColors';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import RideCard from '@/components/ride/RideCard';
+import { RideCard } from '@/components/ride/RideCard';
 import { fontSizes, windowHeight, windowWidth } from '@/themes/AppConstants';
 import fonts from '@/themes/AppFonts';
 import { useRouter } from 'expo-router';
@@ -63,86 +63,93 @@ export default function HomeScreen() {
 
   return (
     <View style={[commonStyles.flexContainer, { backgroundColor: "#FFFFFF" }]}>
-        <ScrollView showsVerticalScrollIndicator={false}>
-          <View style={styles.header}>
-            <View style={styles.headerTop}>
-              <Text style={styles.appName}>RidEase</Text>
-              <TouchableOpacity style={styles.notificationIcon} activeOpacity={0.5}>
-                <Notification colors={color.whiteColor} />
-              </TouchableOpacity>
-            </View>
-
-            <Text style={styles.greeting}>Hello, where do you want to go?</Text>
-
-            <View style={styles.searchBarContainer}>
-              <LocationSearchBar />
-            </View>
+      <ScrollView showsVerticalScrollIndicator={false}>
+        <View style={styles.header}>
+          <View style={styles.headerTop}>
+            <Text style={styles.appName}>RidEase</Text>
+            <TouchableOpacity style={styles.notificationIcon} activeOpacity={0.5}>
+              <Notification colors={color.whiteColor} />
+            </TouchableOpacity>
           </View>
 
-          {/* Khung phương tiện */}
-          <View style={styles.servicesContainer}>
-            <Text style={styles.sectionTitle}>Vehicle</Text>
-            <View style={styles.servicesList}>
-              {services.map(service => (
-                <TouchableOpacity
-                  key={service.id}
-                  style={styles.serviceItem}
-                  onPress={() => router.push('/RidePlan')}
-                >
-                  <View style={styles.serviceIconContainer}>
-                    <Text style={styles.serviceIcon}>{service.icon}</Text>
-                  </View>
-                  <Text style={styles.serviceName}>{service.name}</Text>
-                </TouchableOpacity>
-              ))}
-            </View>
+          <Text style={styles.greeting}>Hello, where do you want to go?</Text>
+
+          <View style={styles.searchBarContainer}>
+            <LocationSearchBar />
           </View>
+        </View>
 
-          {/* Khung khuyến mãi */}
-          <View style={styles.promotionsContainer}>
-            <Text style={styles.sectionTitle}>Offer for you</Text>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.promotionsList}
-            >
-              {promotions.map(promo => (
-                <TouchableOpacity
-                  key={promo.id}
-                  style={[styles.promotionCard, { backgroundColor: promo.color }]}
-                >
-                  <Text style={styles.promoIcon}>{promo.icon}</Text>
-                  <Text style={styles.promoTitle}>{promo.title}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-          </View>
-
-          {/* Khung chuyến đi gần đây */}
-          <View style={styles.recentRidesContainer}>
-            <View style={styles.recentRidesHeader}>
-              <Text style={styles.sectionTitle}>Recent Trips</Text>
-              <TouchableOpacity>
-                <Text style={styles.viewAllText}>View all</Text>
-              </TouchableOpacity>
-            </View>
-
-            <View style={styles.emptyRidesContainer}>
-              <Text style={styles.emptyText}>
-                You have not taken any trips yet.
-              </Text>
-              <Text style={styles.emptySubText}>
-                Book your first trip today!
-              </Text>
+        {/* Khung phương tiện */}
+        <View style={styles.servicesContainer}>
+          <Text style={styles.sectionTitle}>Vehicle</Text>
+          <View style={styles.servicesList}>
+            {services.map(service => (
               <TouchableOpacity
-                style={styles.bookRideButton}
+                key={service.id}
+                style={styles.serviceItem}
                 onPress={() => router.push('/RidePlan')}
               >
-                <Text style={styles.bookRideButtonText}>Book now</Text>
+                <View style={styles.serviceIconContainer}>
+                  <Text style={styles.serviceIcon}>{service.icon}</Text>
+                </View>
+                <Text style={styles.serviceName}>{service.name}</Text>
               </TouchableOpacity>
-            </View>
+            ))}
           </View>
-        </ScrollView>
+        </View>
+
+        {/* Khung khuyến mãi */}
+        <View style={styles.promotionsContainer}>
+          <Text style={styles.sectionTitle}>Offer for you</Text>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.promotionsList}
+          >
+            {promotions.map(promo => (
+              <TouchableOpacity
+                key={promo.id}
+                style={[styles.promotionCard, { backgroundColor: promo.color }]}
+              >
+                <Text style={styles.promoIcon}>{promo.icon}</Text>
+                <Text style={styles.promoTitle}>{promo.title}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Khung chuyến đi gần đây */}
+        <View style={styles.recentRidesContainer}>
+          <View style={styles.recentRidesHeader}>
+            <Text style={styles.sectionTitle}>Recent Trips</Text>
+            <TouchableOpacity>
+              <Text style={styles.viewAllText}>View all</Text>
+            </TouchableOpacity>
+          </View>
+          <ScrollView style={styles.recentRidesScrollView}>
+            {recentRides && recentRides.length > 0 ? (
+              [...recentRides].reverse().map((item, index) => (
+                <RideCard item={item} key={index} />
+              ))
+            ) : (
+              <View style={styles.emptyRidesContainer}>
+                <Text style={styles.emptyText}>
+                  You have not taken any trips yet.
+                </Text>
+                <Text style={styles.emptySubText}>
+                  Book your first trip today!
+                </Text>
+                <TouchableOpacity
+                  style={styles.bookRideButton}
+                  onPress={() => router.push('/RidePlan')}
+                >
+                  <Text style={styles.bookRideButtonText}>Book now</Text>
+                </TouchableOpacity>
+              </View>
+            )}
+          </ScrollView>
+        </View>
+      </ScrollView>
     </View>
   );
 }
@@ -210,6 +217,9 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 15,
   },
+  recentRidesScrollView: {
+    maxHeight: windowHeight(250),
+  },
   serviceIconContainer: {
     width: 60,
     height: 60,
@@ -263,7 +273,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 15,
+    marginBottom: 5,
   },
   viewAllText: {
     color: color.primary,

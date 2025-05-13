@@ -1,71 +1,86 @@
 import { View, Text, StyleSheet, TouchableOpacity, Image } from "react-native";
 import React from "react";
-import { useTheme } from "@react-navigation/native";
-import { fontSizes, windowHeight, windowWidth } from "@/themes/AppConstants";
+import {  windowWidth } from "@/themes/AppConstants";
 import color from "@/themes/AppColors";
 import Images from "@/utils/images";
-import { Gps, Location, Star } from "@/utils/icons";
-import fonts from "@/themes/AppFonts";
+import { LocationIcon, Star } from "@/utils/icons";
+import { router } from "expo-router";
 
-export default function RideCard({ item }: { item: any }) {
-  const { colors } = useTheme();
+export function RideCard({ item }: { item: any }) {
+  
+  const formatDate = (dateString: string | undefined): string => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('vi-VN', {
+      hour: '2-digit',
+      minute: '2-digit',
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric'
+    });
+  };
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('vi-VN', { 
+      style: 'currency', 
+      currency: 'VND',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0 
+    }).format(amount);
+  };
+
+  // Xử lý khi nhấn vào card để xem chi tiết
+  const handleViewDetails = () => {
+    router.push({
+      pathname: "/RideDetails",
+      params: { rideId: item.id }
+    });
+  };
 
   return (
     <TouchableOpacity
       style={[
         styles.main,
-        { backgroundColor: '#F5F8FC'},
+        { backgroundColor: color.whiteColor },
       ]}
+      onPress={handleViewDetails}
     >
-      <View style={[styles.top, { backgroundColor: colors.background }]}>
-        <View style={[styles.alignment, { flexDirection: "row" }]}>
-          <View style={[styles.profile, { flexDirection: "row" }]}>
-            <Image source={Images.user} style={styles.userimage} />
-            <Text style={[styles.userName, { color: colors.text }]}>
-              {item?.driver?.name}
-            </Text>
-          </View>
-          <View style={styles.rate}>
-            <Star />
-            <Text style={[styles.rating, { color: colors.text }]}>5</Text>
-            <View
-              style={[styles.verticalBorder, { borderColor: colors.border }]}
-            />
-            <Text style={styles.price}>BDT {item.charge}</Text>
-          </View>
+      <View style={styles.rideItem}>
+        <View style={styles.rideHeader}>
+          <Text style={styles.rideDate}>{formatDate(item.createdAt)}</Text>
+          <Text style={styles.ridePrice}>{formatCurrency(item.charge)}</Text>
         </View>
-        <View style={[styles.alignment, { flexDirection: "row" }]}>
-          <Text style={styles.timing}>{item.cratedAt?.slice(0, 10)}</Text>
-          <View style={styles.rate}>
-            <Location color={colors.text} />
-            <Text style={[styles.distance, { color: colors.text }]}>
-              {item.distance}
-            </Text>
-          </View>
+        <View style={styles.rideRoute}>
+          <View style={styles.routeDot} />
+          <Text style={styles.routeText}>{item.currentLocationName}</Text>
         </View>
-      </View>
-      <View
-        style={[
-          styles.bottom,
-          styles.alignment,
-          { backgroundColor: colors.background },
-        ]}
-      >
-        <View style={{ flexDirection: "row", height: "auto" }}>
-          <View style={styles.leftView}>
-            <Location color={colors.text} />
-            <View
-              style={[styles.verticalDot, { borderColor: color.darkBorder }]}
-            />
-            <Gps colors={colors.text} />
+        <View style={styles.rideRoute}>
+          <View style={[styles.routeDot, { backgroundColor: color.primary }]} />
+          <Text style={styles.routeText}>{item.destinationLocationName}</Text>
+        </View>
+        
+        <View style={styles.rideFooter}>
+          <View style={styles.userContainer}>
+            <Image source={Images.user} style={styles.userImage} />
+            <Text style={styles.userName}>
+              {item?.driver?.name || "Driver"}
+            </Text>
           </View>
-          <View style={styles.rightView}>
-            <Text style={[styles.pickup, { color: colors.text }]}>
-              {item.currentLocationName}
-            </Text>
-            <Text style={[styles.drop, { color: colors.text }]}>
-              {item.destinationLocationName}
-            </Text>
+          
+          <View style={styles.detailsContainer}>
+            <View style={styles.distanceContainer}>
+              <LocationIcon color="#333" />
+              <Text style={styles.distance}>
+                {item.distance}
+              </Text>
+            </View>
+            
+            <View style={styles.ratingContainer}>
+              <Star />
+              <Text style={styles.rating}>
+                {item.rating || "N/A"}
+              </Text>
+            </View>
           </View>
         </View>
       </View>
@@ -80,93 +95,101 @@ const styles = StyleSheet.create({
     borderRadius: 5,
     padding: windowWidth(5),
   },
-  top: {
-    flex: 1,
-    marginBottom: windowHeight(1.5),
-    paddingHorizontal: windowWidth(3),
+  rideItem: {
+    backgroundColor: '#FFFFFF',
+    padding: 16,
+    marginBottom: 12,
+    borderRadius: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  rideHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#F0F0F0',
+  },
+  rideDate: {
+    fontSize: 14,
+    color: '#555',
+  },
+  ridePrice: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: color.primary,
+  },
+  rideRoute: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 6,
+  },
+  routeDot: {
+    width: 10,
+    height: 10,
     borderRadius: 5,
-    paddingVertical: windowHeight(5),
+    backgroundColor: '#8F8F8F',
+    marginRight: 10,
   },
-  alignment: {
-    justifyContent: "space-between",
+  routeText: {
+    fontSize: 14,
+    color: '#333',
   },
-  profile: {
-    justifyContent: "center",
-    alignItems: "center",
+  emptyContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 20,
   },
-  userimage: {
-    height: windowHeight(35),
-    width: windowWidth(35),
-    resizeMode: "contain",
+  emptyText: {
+    fontSize: 16,
+    color: '#8F8F8F',
+    textAlign: 'center',
+  },
+  rideFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 12,
+  },
+  userContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  userImage: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 10,
   },
   userName: {
-    marginHorizontal: windowWidth(5),
-    fontFamily: fonts.medium,
-    fontSize: fontSizes.FONT20,
+    fontSize: 14,
+    color: '#333',
   },
-  rate: {
-    flexDirection: "row",
-    marginHorizontal: windowWidth(5),
-    justifyContent: "center",
-    alignItems: "center",
+  detailsContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  rating: {
-    marginHorizontal: windowWidth(5),
-    fontFamily: fonts.medium,
-    fontSize: fontSizes.FONT20,
-  },
-  verticalBorder: {
-    borderLeftWidth: 1,
-    height: windowHeight(15),
-    marginHorizontal: windowWidth(5),
-  },
-  price: {
-    color: color.primaryText,
-    marginHorizontal: windowWidth(0.4),
-    fontFamily: fonts.bold,
-    fontSize: fontSizes.FONT20,
-  },
-  border: {
-    borderStyle: "dashed",
-    borderBottomWidth: 5,
-    borderColor: color.border,
-    marginVertical: windowHeight(1.5),
-  },
-  timing: {
-    color: color.secondaryFont,
-    fontFamily: fonts.medium,
-    fontSize: fontSizes.FONT20,
+  distanceContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 10,
   },
   distance: {
-    fontFamily: fonts.medium,
-    fontSize: fontSizes.FONT18,
+    fontSize: 14,
+    color: '#333',
+    marginLeft: 4,
   },
-  bottom: {
-    flex: 1,
-    paddingHorizontal: windowWidth(5),
-    borderRadius: 5,
-    paddingVertical: windowHeight(5),
+  ratingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  leftView: {
-    marginRight: windowWidth(5),
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingVertical: windowHeight(3),
-    marginTop: windowHeight(4),
-  },
-  rightView: {
-    marginTop: windowHeight(5),
-  },
-  verticalDot: {
-    borderLeftWidth: 1,
-    height: windowHeight(20),
-    marginHorizontal: 5,
-  },
-  pickup: {
-    fontSize: fontSizes.FONT18,
-  },
-  drop: {
-    fontSize: fontSizes.FONT18,
-    paddingTop: windowHeight(20),
+  rating: {
+    fontSize: 14,
+    color: '#333',
+    marginLeft: 4,
   },
 });
